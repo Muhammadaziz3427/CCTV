@@ -1,36 +1,62 @@
-# [Project name]
+# CCTV AI Core Processing Engine
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A standalone Python retail store intelligence engine: real-time video stream processing, object detection (YOLOv8), employee attendance tracking, phone-abuse detection, customer counting, and blacklist security alerts — all written to a local SQLite/JSON store, ready to bridge to Supabase or any external API.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+### Python CCTV Engine (primary deliverable)
+
+```bash
+cd cctv
+pip install -r requirements.txt
+
+python engine.py                          # default webcam (falls back to synthetic)
+python engine.py --source sample.mp4      # video file
+python engine.py --source rtsp://...      # IP camera
+python engine.py --no-gui                 # headless / server mode
+python engine.py --model yolov8s.pt       # larger model
+```
+
+### Node.js workspace (supporting infrastructure)
+- `pnpm --filter @workspace/api-server run dev` — run the Express API server (port from env)
+- `pnpm run typecheck` — full TypeScript typecheck
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks from OpenAPI spec
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+### Python Engine (`cctv/`)
+- Python 3.10+, OpenCV, Ultralytics YOLOv8/v11, NumPy, SQLite3
+
+### Node.js Workspace
+- pnpm workspaces, Node.js 24, TypeScript 5.9, Express 5, Drizzle ORM + PostgreSQL, Zod
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+```
+cctv/
+├── engine.py          — Entry point & main loop (CCTVEngine class)
+├── config.py          — All tunable parameters (zones, employees, thresholds)
+├── data_store.py      — SQLite + JSON log persistence layer
+├── requirements.txt   — pip dependencies
+├── blacklist.json     — Auto-created on first run
+├── local_telemetry.db — Auto-created SQLite events database
+└── live_stream_events.json — Auto-created NDJSON event log
+```
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Fallback chain**: Primary source → `FALLBACK_SOURCES` list → synthetic matrix frames. The engine NEVER crashes on missing hardware.
+- **Mock embeddings**: 8-d cosine-similarity vectors used as face recognition proxies; any real face model (InsightFace, DeepFace) drops in by replacing `_extract_mock_embedding()` in `engine.py`.
+- **Event schema designed for Supabase**: `{timestamp, event_type, details}` is the universal shape written to both SQLite and NDJSON; push to Supabase by setting `REMOTE_API_ENDPOINT` + `REMOTE_API_KEY` in `config.py`.
+- **DataStore is the only I/O boundary**: All events funnel through `DataStore.log_event()` — swapping the backend requires changing only that class.
+- **No GUI dependency at runtime**: `Visualiser` auto-detects `$DISPLAY`; headless mode works without X11.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Three parallel tracking routines per frame:
+- **Employee tracking** — matches faces to roster, logs presence time and register-zone coverage, alerts on cashier absence.
+- **Phone abuse detection** — YOLO cell-phone proximity to employees; 5-second sustained detection triggers a WARNING event.
+- **Customer & security monitoring** — customer count in zone, periodic density scoring, blacklist face matching with configurable similarity threshold.
 
 ## User preferences
 
@@ -38,8 +64,12 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- YOLO downloads model weights on first run (~6 MB for `yolov8n.pt`) — requires internet on first launch.
+- Zone pixel coordinates in `config.py` assume `FRAME_WIDTH=960 × FRAME_HEIGHT=540`; recalibrate if you change resolution.
+- Phone proximity matching is index-based (not tracked-ID-based) in the mock implementation — sufficient for demo, needs real person tracking IDs for production.
+- Do not run `pnpm dev` at workspace root; use workflow names or `pnpm --filter`.
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See `cctv/README.md` for full usage, schema docs, integration guide, and employee/blacklist configuration instructions.
+- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.

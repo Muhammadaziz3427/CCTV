@@ -1,0 +1,31 @@
+Create a pure, standalone Python-based "CCTV AI Core Processing Engine" for a retail store environment. This script will handle video stream processing, object detection, face recognition logic, and business rules without any web frontend or mobile app. It must be architected so that it can be easily integrated with a central API/Database (like Supabase) later.
+
+Please implement the following technical specifications:
+
+1. CORE DEPENDENCIES & ENVIRONMENT
+- Use Python 3.10+.
+- Utilize `opencv-python` for video capture and image handling.
+- Utilize `ultralytics` (YOLOv8/YOLOv11) for object detection (detecting people and cell phones).
+- Structure the project cleanly with a main engine script (`engine.py`), a configuration file (`config.py`), and a local data manager (`data_store.py`).
+
+2. VIDEO STREAM INPUT HANDLING
+- The script must support reading from an IP Camera RTSP URL or a local USB Webcam (default to `0`).
+- Crucial: Since this runs in a cloud environment where a physical camera might not be accessible, implement a fallback mechanism. If no hardware camera is found, it must automatically switch to reading from a sample video file or generating synthetic matrix frames so the script runs continuously without crashing.
+
+3. AI PROCESSING & BUSINESS LOGIC PIPELINE
+In every processed frame, the engine must execute three parallel tracking routines:
+- A. Employee Role & Attendance Tracking: Identify predefined employees (mock their face embeddings/features in a local file). Track when they are visible in specific screen coordinates designated as "Register/Kassa 1". Calculate their total active presence time.
+- B. Phone Abuse Detection: Use YOLO to detect if any active employee is holding or looking at a "cell phone". If the phone detection persists for more than 5 consecutive seconds, trigger a local log.
+- C. Customer & Security Monitoring: Track total people count in the customer zone. If an unknown face matches a local "blacklist.json" file (simulate via simple feature mapping), flag it immediately.
+
+4. STRUCTURED DATA OUTPUT (The Integration Bridge)
+Instead of just printing to the console, the engine must write structured data to a local SQLite database (`local_telemetry.db`) or a structured JSON log file (`live_stream_events.json`). The output format must exactly match this structure so it can be pushed to an external database later:
+- `timestamp`: Current date and time.
+- `event_type`: (e.g., 'EMPLOYEE_PRESENT', 'PHONE_ABUSE', 'CASHIER_MISSING', 'BLACKLIST_SPOTTED', 'CUSTOMER_COUNT_UPDATE').
+- `details`: A dictionary containing specific event metadata (e.g., employee_name, phone_duration_seconds, customer_density_score).
+
+5. EXECUTION & CLI VISUALIZATION
+- Provide a clean Command Line Interface (CLI) that outputs a live, real-time running log of what the camera sees.
+- If running in an environment that supports GUI, use `cv2.imshow` to display the video feed with bounding boxes drawn around detected people, highlighted boxes around cell phones, and text labels indicating employee identity or security risk level.
+
+Make the code heavily modular, completely documented with comments, and ensure it includes a `requirements.txt` file for all necessary AI libraries.

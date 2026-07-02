@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CCTV AI Core Processing Engine — Python dependencies
+# Install with:  pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Computer Vision ──────────────────────────────────────────────────────────
+opencv-python>=4.9.0          # Video capture, image processing, GUI window
+
+# ── AI / Object Detection ───────────────────────────────────────────────────
+ultralytics>=8.0.0            # YOLOv8 / YOLOv11 inference (downloads models automatically)
+
+# ── Numerical / Array work ───────────────────────────────────────────────────
+numpy>=1.26.0                 # Array ops used throughout the engine
+
+# ── (Optional) GPU acceleration ──────────────────────────────────────────────
+# torch is pulled in transitively by ultralytics.
+# For CUDA support, install the appropriate torch wheel FIRST, e.g.:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# ── Standard-library-only modules used (no install needed) ───────────────────
+# sqlite3   — built into Python 3.x
+# json      — built into Python 3.x
+# threading — built into Python 3.x
+# logging   — built into Python 3.x
+# argparse  — built into Python 3.x
+# dataclasses — built into Python 3.7+
