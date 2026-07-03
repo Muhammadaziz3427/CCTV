@@ -1,18 +1,35 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# --- Python uchun maxsus ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+.env
 
-# compiled output
-dist
-tmp
-out-tsc
-*.tsbuildinfo
-.expo
-.expo-shared
+# --- AI va Model fayllari (Og‘ir fayllarni Git'ga yuklamaslik uchun) ---
+*.pt
+*.weights
+*.onnx
+*.pb
+*.h5
 
-# dependencies
-node_modules
+# --- Ma'lumotlar va Loglar ---
+*.log
+*.db
+*.sqlite3
+data/
+logs/
 
-# IDEs and editors
-/.idea
+# --- IDE va Editorlar (Sizning eski faylingizdan) ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
 .project
 .classpath
 .c9/
@@ -20,30 +37,23 @@ node_modules
 .settings/
 *.sublime-workspace
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
+# --- System Files ---
 .DS_Store
 Thumbs.db
 
+# --- Siz ko'rsatgan maxsus fayllar ---
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
-.cache/
-.local/
+# --- Web va Misc (Sizning eski faylingizdan qolganlar) ---
+node_modules/
+dist/
+tmp/
+out-tsc/
+*.tsbuildinfo
+.expo/
+.expo-shared/
+/coverage
+npm-debug.log
+yarn-error.log
+testem.log

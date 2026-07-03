@@ -6,72 +6,66 @@ are declared here so the rest of the codebase never contains magic numbers.
 """
 
 import os
-from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
-# Camera / Video Source
+# Camera / Video Source Settings
 # ---------------------------------------------------------------------------
 
 # Primary source. Options:
-#   0, 1, 2 …    → local USB webcam index
-#   "rtsp://…"   → IP camera RTSP URL
-#   "/path/…"    → local video file (mp4, avi, etc.)
+#   0, 1, 2 ...    → local USB webcam / laptop camera index
+#   "rtsp://..."   → IP camera RTSP URL
+#   "/path/..."    → local video file (mp4, avi, etc.)
 CAMERA_SOURCE: str | int = 0
 
 # Fallback: if the primary source cannot be opened, the engine tries these in
-# order until one succeeds.  If all fail, synthetic matrix frames are generated.
+# order until one succeeds. If all fail, synthetic matrix frames are generated.
 FALLBACK_SOURCES: List[str | int] = [
-    "sample_video.mp4",   # bundled sample clip (downloaded at first run if absent)
+    "sample_video.mp4",   # bundled sample clip
 ]
 
-# Target processing resolution (width, height).  Smaller → faster inference.
+# Target processing resolution (width, height). Smaller → faster inference.
+# Laptop veb-kameralari uchun 960x540 tezlik va aniqlik tomonlama eng maqbul o'lchamdir.
 FRAME_WIDTH: int  = 960
 FRAME_HEIGHT: int = 540
 
 # Frames processed per second (0 = unlimited / as fast as possible).
+# 15 FPS protsessorga ortiqcha yuklama bermasdan silliq ishlashni ta'minlaydi.
 TARGET_FPS: int = 15
 
 # ---------------------------------------------------------------------------
-# YOLO Detection
+# YOLO Object Detection
 # ---------------------------------------------------------------------------
 
-# YOLOv8/v11 model name.  Ultralytics downloads it automatically on first use.
-# "yolov8n.pt" is the nano (fastest) variant; swap for "yolov8s.pt" etc. if
-# you have more compute budget.
+# YOLOv8/v11 model name. Ultralytics downloads it automatically on first use.
+# "yolov8n.pt" is the nano (fastest) variant.
 YOLO_MODEL: str = "yolov8n.pt"
 
 # Confidence threshold for accepting a detection.
 DETECTION_CONFIDENCE: float = 0.45
 
-# COCO class IDs we care about.
+# COCO class IDs for detection.
 COCO_PERSON_CLASS: int       = 0    # "person"
 COCO_CELL_PHONE_CLASS: int   = 67   # "cell phone"
 
 # ---------------------------------------------------------------------------
-# Zone Definitions  (x1, y1, x2, y2 in *pixel* coords at FRAME resolution)
+# Spatial Zone Definitions (x1, y1, x2, y2 in pixel coordinates)
 # ---------------------------------------------------------------------------
 
-# "Register / Kassa 1" — the area around the cash register where employees work.
-# Adjust these to match the actual camera angle.
-REGISTER_ZONE: Tuple[int, int, int, int] = (600, 200, 960, 540)
+# "Register / Kassa 1" — Ekranning o'ng tomoni (X: 600 dan 960 gacha)
+# Agar yuzingiz shu koordinatalar ichiga kirsa, tizim sizni avtomatik Kassir deb hisoblaydi.
+REGISTER_ZONE: Tuple[int, int, int, int] = (600, 0, 960, 540)
 
-# Customer zone — the public area of the shop floor.
+# "Customer Zone" — Ekranning chap va markaziy qismi (X: 0 dan 600 gacha)
+# Sinab ko'rish uchun noutbuk kamerasining chaprog'ida tursangiz, tizim "Customer: 1" deb hisoblaydi.
 CUSTOMER_ZONE: Tuple[int, int, int, int] = (0, 0, 600, 540)
 
 # ---------------------------------------------------------------------------
-# Employee Profiles
+# Employee Profiles & Face Recognition
 # ---------------------------------------------------------------------------
-# Each entry holds mock "face embedding" data.
-# In a real deployment, replace `mock_embedding` with a 128-d float vector
-# produced by an actual face recognition model.  The engine uses cosine
-# similarity, so any fixed-length numeric vector works as a drop-in.
-#
-# `employee_id`  — stable identifier used in all log events.
-# `name`         — human-readable display name.
-# `role`         — job title (cashier, manager, stock …).
-# `mock_embedding` — 8-dimensional placeholder (normalised on load).
 
+# Kelajakda tizimga real yuz embeddings ma'lumotlarini ulash uchun tayyor ro'yxat.
+# Test rejimida birinchi aniqlangan xodim avtomatik ro'yxatdagi birinchisiga (Alice) uylanadi.
 EMPLOYEES: List[Dict] = [
     {
         "employee_id": "EMP001",
@@ -94,68 +88,65 @@ EMPLOYEES: List[Dict] = [
 ]
 
 # Similarity threshold above which a face region is considered a known employee.
-# Range: 0.0 (never match) → 1.0 (exact match).  0.70 is a reasonable baseline.
 FACE_SIMILARITY_THRESHOLD: float = 0.70
 
 # ---------------------------------------------------------------------------
-# Phone Abuse Detection
+# Business Logic & Rules
 # ---------------------------------------------------------------------------
 
-# Seconds a phone must be continuously detected near an employee before
-# a PHONE_ABUSE event is logged.
+# Telefonda uzluksiz o'tirish limiti (sekund). 5 sekunddan oshsa qoidabuzarlik yoziladi.
 PHONE_ABUSE_SECONDS: float = 5.0
 
-# Pixel distance within which a phone box is considered "near" an employee box.
+# Telefoni odamga tegishli deb hisoblash uchun piksel masofasi.
 PHONE_PROXIMITY_PIXELS: int = 120
 
 # ---------------------------------------------------------------------------
-# Blacklist (Security Monitoring)
+# Security & Blacklist Settings
 # ---------------------------------------------------------------------------
-# Path to the JSON file containing blacklisted face "embeddings".
-# See data_store.py for the expected schema.
+
+# Shubhali shaxslar ro'yxati fayli yo'li.
 BLACKLIST_PATH: str = os.path.join(os.path.dirname(__file__), "blacklist.json")
 
-# Similarity threshold for a blacklist match.
+# Qora ro'yxatga moslik darajasi.
 BLACKLIST_SIMILARITY_THRESHOLD: float = 0.75
 
 # ---------------------------------------------------------------------------
-# Data Output
+# Data Storage & Local Persistence
 # ---------------------------------------------------------------------------
 
-# SQLite telemetry database path.  The file is created automatically.
+# SQLite ma'lumotlar bazasi fayli yo'li.
 SQLITE_DB_PATH: str = os.path.join(os.path.dirname(__file__), "local_telemetry.db")
 
-# JSON event log path.  Events are appended as newline-delimited JSON (NDJSON).
+# JSON formatida log yozib boriladigan fayl yo'li (NDJSON).
 JSON_LOG_PATH: str = os.path.join(os.path.dirname(__file__), "live_stream_events.json")
 
-# How often (seconds) to emit a CUSTOMER_COUNT_UPDATE event even if count is stable.
+# Mijozlar soni o'zgarmasa ham, har necha sekundda bazaga yangilanish yuborish kerakligi.
 CUSTOMER_COUNT_INTERVAL_SECONDS: float = 30.0
 
 # ---------------------------------------------------------------------------
-# GUI / CLI
+# GUI Visuals & Colors (BGR format for OpenCV)
 # ---------------------------------------------------------------------------
 
-# Show OpenCV window when a display is available.  Set False to force headless.
+# OpenCV vizual oynasini yoqish/o'chirish.
 ENABLE_GUI: bool = True
 
-# Window title.
 GUI_WINDOW_TITLE: str = "CCTV AI Core — Retail Monitor"
 
-# Colours (BGR for OpenCV).
-COLOR_EMPLOYEE: Tuple[int, int, int]  = (0,   200, 0  )   # green
-COLOR_CUSTOMER: Tuple[int, int, int]  = (200, 200, 0  )   # cyan-ish
-COLOR_PHONE:    Tuple[int, int, int]  = (0,   0,   255)   # red
-COLOR_BLACKLIST:Tuple[int, int, int]  = (0,   0,   200)   # dark red
-COLOR_ZONE:     Tuple[int, int, int]  = (255, 128, 0  )   # orange
-COLOR_TEXT:     Tuple[int, int, int]  = (255, 255, 255)   # white
+# Kadrdagi ramkalar ranglari (Ko'k, Yashil, Qizil tartibida).
+COLOR_EMPLOYEE: Tuple[int, int, int]   = (0,   200, 0  )   # Yashil
+COLOR_CUSTOMER: Tuple[int, int, int]   = (200, 200, 0  )   # Havorang / Och ko'k
+COLOR_PHONE:    Tuple[int, int, int]   = (0,   0,   255)   # Qizil
+COLOR_BLACKLIST: Tuple[int, int, int]  = (0,   0,   200)   # To'q qizil
+COLOR_ZONE:      Tuple[int, int, int]  = (255, 128, 0  )   # To'q sariq chiziqlar
+COLOR_TEXT:      Tuple[int, int, int]  = (255, 255, 255)   # Oq matn
 
-# CLI table refresh rate (lines between dashboard prints).
+# Terminal (CLI) interfeysini har nechta kadrda yangilab turish.
 CLI_REFRESH_EVERY_N_FRAMES: int = 30
 
 # ---------------------------------------------------------------------------
-# Integration / API Bridge (future)
+# Remote API Bridge (Kelajakda Supabase/Veb-saytga ulash qismi)
 # ---------------------------------------------------------------------------
-# When set, the engine will attempt to POST events to this URL in addition to
-# writing them locally.  Leave as None to disable remote push.
-REMOTE_API_ENDPOINT: Optional[str] = None   # e.g. "https://xyz.supabase.co/rest/v1/events"
-REMOTE_API_KEY: Optional[str]      = None   # Bearer / anon key for Supabase etc.
+# Sayt va ilova tayyor bo'lgach, faqat shu yerga URL va KEY yoziladi.
+# Backend API ulangan zahoti local ma'lumotlar real-time bulutga ham ketadi.
+REMOTE_API_ENDPOINT: Optional[str] = None   # Masalan: "https://xyz.supabase.co/rest/v1/events"
+REMOTE_API_KEY: Optional[str]      = None   # Supabase anon/service_role key
